@@ -1,0 +1,381 @@
+---
+title: "Regression Model Course - Course Project"
+author: "Thiago Mata"
+date: "29 January 2019"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+## Introduction
+
+In this [project](https://www.coursera.org/learn/regression-models/peer/nxntd/regression-models-course-project), the goal is to make a study to the Motor Trend magazine
+that want know more about the relationship between a set of variables and miles per gallon (MPG) (outcome). They are particularly interested in the following two questions:
+
+* Is an automatic or manual transmission better for MPG
+
+* Quantify the MPG difference between automatic and manual transmissions
+
+## Summary
+
+After making a exploratory data analyses, this study will propose some models to define the relationship among the fields and the MPG. After that, this paper will describe what
+strategy was used to the model selection. Then, it will present the residual plot and diagnostics based on the model.
+
+```{r setup, include=TRUE}
+options(scipen=999)         # make the number printer more readable
+Sys.setenv(LANG = "en")     # show messages on english
+Sys.setenv(LANGUAGE = "en") # show messages on english
+rm(list=ls())               # remove other data from env, if any
+set.seed(123)               # set a seed to ensure get always the same results
+```
+
+## Loading Libraries
+
+```{r load_libraries,warning=FALSE,message=FALSE}
+# loading required libraries
+library('knitr')
+library('ggplot2')
+library('doParallel')
+library('e1071')
+library('gridExtra')
+library('cowplot')
+library('kableExtra')
+library('ggpubr')
+registerDoParallel(cores=4)
+```
+
+## Exploratory Data Analyses.
+
+The dataset used in this study is the [Motor Trend Car Road Tests Data](https://www.rdocumentation.org/packages/datasets/versions/3.5.2/topics/mtcars). Each row contains the following fields:
+
+```{r describe_columns, results='asis',echo=TRUE}
+TRANSMITION_AUTOMATIC       <- "Automatic"
+TRANSMITION_MANUAL          <- "Manual"
+ENGINE_SHAPED               <- "V-shaped"
+ENGINE_STRAIGHT             <- "Straight"
+COLOR_TRANSMITION_AUTOMATIC <- "#f79646" # light orange
+COLOR_TRANSMITION_MANUAL    <- "#4bacc6" # light blue
+CONFIDENCE_INTERVAL         <- 0.95      # 95%
+
+setNumberPrecision <- function(x, k) trimws(format(round(x, k), nsmall=k))
+getResidualSquaredError <- function(model) sum(model$residuals^2)
+
+fieldDescription <- list()
+fieldDescription[["mpg"]]  <- "Miles/(US) gallon"                                # mpg
+fieldDescription[["cyl"]]  <- "Number of cylinders"                              # cyl
+fieldDescription[["disp"]] <- "Displacement (cu.in.)"                            # disp
+fieldDescription[["hp"]]   <- "Gross horsepower"                                 # hp
+fieldDescription[["drat"]] <- "Rear axle ratio"                                  # drat
+fieldDescription[["wt"]]   <- "Weight (1000 lbs)"                                # wt
+fieldDescription[["qsec"]] <- "1/4 mile time"                                    # qsec
+fieldDescription[["vs"]]   <- "Type of Engine (0 = V-shaped  1 = straight)"      # vs - factor
+fieldDescription[["am"]]   <- "Type of Transmission (0 = automatic  1 = manual)" # am - factor
+fieldDescription[["gear"]] <- "Number of forward gears"                          # gear
+fieldDescription[["carb"]] <- "Number of carburetors"                            # carb
+percentOfNAFields <- c()
+size <- length(mtcars)
+for( field in names(mtcars)) {
+  percentOfNA <- ( (length(mtcars[is.na(field)])) / size )
+  percentOfNAFields[length(percentOfNAFields)+1] <- paste(percentOfNA,"%")
+}
+dataDescription = data.frame(
+  field = names(mtcars),
+  description = unlist(fieldDescription,use.names=FALSE),
+  "percent of Null" = percentOfNAFields
+)
+
+cat(knitr::kable(dataDescription) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+```
+
+Since that are some factors fields, it is necessary to cast them to read the data properly. Also, it is good to know that are no null values that could affect our data.
+
+```{r preparing_data}
+mtcars$vs <- as.factor(mtcars$vs)
+levels(mtcars$vs) <- c(ENGINE_SHAPED, ENGINE_STRAIGHT)
+mtcars$am  <- as.factor(mtcars$am)
+levels(mtcars$am) <- c(TRANSMITION_AUTOMATIC, TRANSMITION_MANUAL)
+
+mtCarsCorDummies <- mtcars[,!(colnames(mtcars) %in% c("am" , "vs"))]
+mtCarsCorDummies$am <- ifelse(mtcars$am == TRANSMITION_MANUAL,1,0)
+mtCarsCorDummies$vs <- ifelse(mtcars$vs == ENGINE_STRAIGHT,1,0)
+```
+
+
+## MPG x Type of Transmition
+```{r plot_mpg_by_transmition,warning=FALSE,message=FALSE}
+automaticCars <- mtcars[mtcars$am == TRANSMITION_AUTOMATIC,]
+manualCars    <- mtcars[mtcars$am == TRANSMITION_MANUAL,]
+
+meanOfAutomatic <- mean(mtcars$mpg[mtcars$am == "Automatic"])
+meanOfManual    <- mean(mtcars$mpg[mtcars$am == "Manual"])
+
+plotBoxPlot <- ggplot(mtcars, aes(x=am, y=mpg,fill=am)) +
+  geom_boxplot() +
+  ylab("MPG") +
+  xlab("Type of Transmission") +
+  scale_fill_manual(values=c(COLOR_TRANSMITION_AUTOMATIC, COLOR_TRANSMITION_MANUAL)) +
+  guides(fill=guide_legend(title="Type of Transmission"))
+  stat_summary(fun.y=mean, geom="point", shape=23, size=4)
+print(plotBoxPlot)
+
+```
+
+
+Looking just to MPG and Type of Transmition, seems to have a strong relashionship between these thow fields. This paper intent to check how strong is that coefficient. To do we intent to create some regression models. But first, it is necessary to check if the data distribution is close to normal.
+
+## Checking Normality
+
+Many statistical tests, including correlation and regression model demands a normal distribution or an Gaussian distribution. So, first, let's check if the MPG is close to normal.
+```{r normal_cuve}
+shapiroResultAutomaticCars <- shapiro.test(automaticCars$mpg)
+shapiroResultManualCars <- shapiro.test(manualCars$mpg)
+
+plotMpgDistributionCurve <- ggqqplot(automaticCars$mpg) + labs(y = "On Automatic Transmition Cars")
+plotAmDistributionCurve  <- ggqqplot(manualCars$mpg)  + labs(y = "On Manual Transmition Cars")
+plotSideBySide <- plot_grid(
+  plotMpgDistributionCurve,
+  plotAmDistributionCurve,
+  labels=c(
+    paste0('P-Value = ',setNumberPrecision(shapiroResultAutomaticCars$p.value,4)),
+    paste0('P-Value = ',setNumberPrecision(shapiroResultManualCars$p.value,4))
+  ),
+  ncol = 2
+)
+# now add the title
+title <- ggdraw() +
+  draw_label("MPG Quantile-Quantile by Transmition Type (AM)", fontface = 'bold')
+
+print(plot_grid(title, plotSideBySide, ncol = 1, rel_heights = c(0.1, 1)))
+```
+
+So, we can assume that is a Normal Distribution and create linear models.
+
+## Creating a Model Using more Correlated Values
+
+### Calculate the Correlationof of MPG with the Fields
+```{r check_cor_of_the_others_fields, results='asis',echo=TRUE}
+corTable <- as.data.frame(cor(mtCarsCorDummies))
+cat(knitr::kable(corTable[c("mpg","am"),]) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+```
+Creating 3 models to compare the results:
+
+```{r describe_models, results='asis'}
+describeModels <- data.frame(
+  model = c(
+    "Model A",
+    "Model B",
+    "Model C",
+    "Model D",
+    "Model E"
+  ),
+  expectedOutcome = c(
+    "MPG",
+    "MPG",
+    "MPG",
+    "Transmission Type",
+    "Residuals of Model B"
+  ),
+  predictors = c(
+    "Just the Transmission Type",
+    "Fields strong correlated with the MPG, including Transmission Type",
+    "Fields strong correlated with the MPG, except Transmission Type",
+    "Fields strong correlated with the Transmission Type, except MPG",
+    "Just the Transmission Type"
+  )
+)
+cat(knitr::kable(describeModels) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+```
+```{r creating_model}
+modelAAmOnly         <- lm(mpg ~ am , data=mtCarsCorDummies)
+modelBStrongFields   <- lm(mpg ~  wt + cyl + disp + hp + drat + vs + am, data=mtCarsCorDummies )
+modelCStrongNoAm     <- lm(mpg ~  wt + cyl + disp + hp + drat + vs, data=mtCarsCorDummies)
+modelDPRedictAm      <- lm(am  ~  wt + cyl + disp + hp + drat + vs, data=mtCarsCorDummies)
+
+rssA <- getResidualSquaredError(modelAAmOnly)
+rssB <- getResidualSquaredError(modelBStrongFields)
+rssC <- getResidualSquaredError(modelCStrongNoAm)
+rssD <- getResidualSquaredError(modelDPRedictAm)
+
+dfResiduals <- data.frame(
+  residual = modelCStrongNoAm$residuals,
+  am = mtCarsCorDummies$am
+)
+modelResidualOfB <- lm(residual ~ am,dfResiduals)
+
+```
+
+### Show Coeficients
+```{r show_coefecients,results='asis'}
+library(plyr)
+
+# model using all the strong correlated fields
+coefStrong <- as.data.frame(t(modelBStrongFields$coefficients))
+coefStrong$RSS <- getResidualSquaredError(modelBStrongFields)
+#coefStrong$model <- "Model A"
+
+# model using all strong correlated fields except am
+coefStrongButAm <- as.data.frame(t(modelCStrongNoAm$coefficients))
+coefStrongButAm$RSS <- getResidualSquaredError(modelCStrongNoAm)
+#coefStrongButAm$model <- "Model B"
+
+# model using only am
+coefAm <- as.data.frame(t(modelAAmOnly$coefficients))
+coefAm$RSS <- getResidualSquaredError(modelAAmOnly)
+#coefAm$model <- "Model C"
+
+coefPredictAm <- as.data.frame(t(modelDPRedictAm$coefficients))
+coefPredictAm$RSS <- getResidualSquaredError(modelDPRedictAm)
+#coefPredictAm$model <- "Model D"
+
+coefsAndResidual <- rbind.fill(
+  coefAm,
+  coefStrong,
+  coefStrongButAm,
+  coefPredictAm
+)
+coefsAndResidual$model <- describeModels$model[1:4]
+coefsAndResidual$predictors <- describeModels$predictors[1:4]
+coefsAndResidual <- coefsAndResidual[
+  c("model","predictors","am","wt","vs","cyl","drat","hp","disp","RSS")
+]
+cat(knitr::kable(coefsAndResidual,digits = 4) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+
+```
+
+
+As show on the table above, some of the predictors of the Transmition Type, as vs and draft, are also predictors of the MPG. So, to have a clear vision about the influence of the Transmition Type on the MPG, let's see how good is the Transmition Type to predict the residual.
+```{r prediction_over_residual,results='asis'}
+ggplot(dfResiduals, aes(residual, 1:nrow(dfResiduals), colour = factor(am))) +
+  xlab("Residual of the MPG from the model \n that used all fields except Transmition") +
+  ylab("Row Number") +
+  labs(col="Transmition Type") +
+  scale_color_manual(labels = c(TRANSMITION_AUTOMATIC, TRANSMITION_MANUAL),
+                     values = c(COLOR_TRANSMITION_AUTOMATIC, COLOR_TRANSMITION_MANUAL)) +
+  guides(fill=guide_legend(title="Type of Transmition")) +
+  geom_point()
+
+residCof <- as.data.frame(modelResidualOfB$coefficients)
+residCof$RSS <- getResidualSquaredError(modelResidualOfB)
+cat(knitr::kable(residCof) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+
+```
+
+So, we can see that the Transmition Type, the am column, have a strong impact on the predicition. When we remove it, the
+Residual sum of squares - RSS increases `r setNumberPrecision((100*(rssC - rssB)/rssC), 2)`%. But, the influence of the Transmition Type on the MPG is not as big in the model that just consider that field. So, many other fields also have a strong influence over the MPG and some of them are also strong correlated with the Transmition Type.
+
+
+## Evaluating the Models
+
+### Model A - Only knowing the Transmition Type
+
+The Transmition Type has a strong influence on the MPG. In this model, we can say that only knowing that some car has Manual Transmition should increases our MPG prediction to `r modelAAmOnly$coefficients[["am"]]` with residual squared error of `r getResidualSquaredError(modelAAmOnly)`. This high value is because, not only the Transmition Type may increase the MPG, but also because the Transmition Type has a strong coefficient of `r modelDPRedictAm$coefficients[["drat"]]` with the Weight (wt), `r modelDPRedictAm$coefficients[["wt"]]`, with the Rear Axle Ratio (drat), `r modelDPRedictAm$coefficients[["drat"]]`,and with the Type of Engine (vs), `r modelDPRedictAm$coefficients[["vs"]]`. These fields also presents high coeficients to predict the MPG with `r modelBStrongFields$coefficients[["wt"]]`, `r modelBStrongFields$coefficients[["drat"]]` and `r modelBStrongFields$coefficients[["vs"]]` respectivaly.
+
+So, in that sense, the Type of Transmition is a good to predict if that the car presents many features that, all together, increase the car consume.
+
+```{r confit_am_only,results='asis'}
+confitModelA <- confint(modelAAmOnly,"am",level=CONFIDENCE_INTERVAL)
+cat(knitr::kable(confitModelA) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+```
+
+Considering the 95% of confidence interval, that effects may vary in the interval of `r confitModelA[1,1]` to `r confitModelA[1,2]`.
+
+### Model B - With all correlated fields
+
+Considering that we known everthing about a car. Then how much changing only the Transmition Type may affects the MPG? To answer that question, we created a model that uses the most strong correlated fields. In this model, considering all the rest the same, changing a the transmition type from Manual to Automatic should increase the MPG in `r modelBStrongFields$coefficients[["am"]]` with residual squared error: `r getResidualSquaredError(modelBStrongFields)`.
+
+```{r confit_strong,results='asis'}
+confitStrongCoef <- confint(modelBStrongFields,"am",level=CONFIDENCE_INTERVAL)
+cat(knitr::kable(confitStrongCoef) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+```
+Considering the 95% of confidence interval, that effects may vary in the interval of `r confitStrongCoef[1,1]` to `r confitStrongCoef[1,2]`.
+
+
+### Model E - Transmition Type over the Residuals of Model B
+
+After extracting all the predictability data from the others fields, this new model can measure if the remain data is still correlated to the Type of Transmission. The coefficient from the Type of Transmission in this case is `r modelResidualOfB$coefficients[["am"]]`. In other words,
+after removing all the influence of the others fields, the influence of the Type of Transmission from Automatic to Manual on the MPG is `r modelResidualOfB$coefficients[["am"]]` with residual squared error of `r getResidualSquaredError(modelResidualOfB)`.
+
+```{r confit_residual,results='asis'}
+confitResidual <- confint(modelResidualOfB,"am",level=CONFIDENCE_INTERVAL)
+cat(knitr::kable(confitResidual) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
+```
+
+Considering the 95% of confidence interval, that effects may vary in the interval of `r confitResidual[1,1]` to `r confitResidual[1,2]`.
+
+## Comparing Residuals
+```{r plot_residuals}
+
+plotColors <-scale_color_manual(
+  labels = c(TRANSMITION_AUTOMATIC, TRANSMITION_MANUAL),
+  values = c(COLOR_TRANSMITION_AUTOMATIC, COLOR_TRANSMITION_MANUAL)
+)
+
+  # plot A
+plotResidualsA <- qplot(modelAAmOnly$residuals, mtcars$mpg, colour = factor(mtcars$am)) +
+  labs(
+    x = paste0(
+      "Residuals of Model A \n Simple Model \n Only Transmission Type \n RSS = ", 
+      setNumberPrecision(rssA,4)
+    ), 
+    y = "MPG", 
+    color="Transmition Type"
+  )  + theme(legend.position="none") + plotColors
+  
+
+# plot B
+plotResidualsB <- qplot(modelBStrongFields$residuals, mtcars$mpg, colour = factor(mtcars$am)) + 
+  labs(
+    x = paste0(
+      "Residuals of Model B \n All Strong and  \n Transmission Type \n RSS = ", 
+      setNumberPrecision(rssB,4)
+    ), 
+    y = "MPG", color="Transmition Type"
+  ) + theme(legend.position="none") + plotColors
+
+# plot C
+plotResidualsC <- qplot(modelCStrongNoAm$residuals, mtcars$mpg, colour = factor(mtcars$am)) +
+  labs(
+    x = paste0(
+      "Residuals of Model C \n All Strong but \n Transmission Type \n RSS = ", 
+      setNumberPrecision(rssC,4) 
+    ), 
+    y = "MPG", 
+    color="Transmition Type"
+  ) + theme(legend.position="none") + plotColors
+
+plotResidualsGrid <- plot_grid(
+  plotResidualsA,
+  plotResidualsB,
+  plotResidualsC,
+  ncol = 3
+)
+# add the title
+titleResiduals <- ggdraw() + draw_label("Residuals of the Models", fontface = 'bold')
+# create the legend
+legendResiduals <- get_legend( plotResidualsA +  guides(fill=guide_legend(title="Transmition Type")) + theme(legend.position="bottom") )
+# combine in the final grid
+finalGrid <- plot_grid(titleResiduals, plotResidualsGrid, legendResiduals, ncol = 1, rel_heights = c(0.1, 0.7, 0.2))
+```
+
+```{r print_final_grid}
+finalGrid
+```
+
+
+As we can see on the plot above, using just the Transmission Type to try to predict the MPG have a strong RSS and cleary is not a good model. Adding the Transmission Type, on the model reduce the Residual Sum of Squareds in `r setNumberPrecision((100*(rssC - rssB)/rssC), 2)`%.
+
+## Conclusion
+
+If we don't have any other information about a car, beyond the Type of Transmission, then we can say that a car with Manual Transmission should have the MPG around `r modelAAmOnly$coefficients[["am"]]` bigger than the Automatic. If we know everything about a car, and just changing the transmission type from 
+Automatic to Manual shoud increase the MPG in `r modelBStrongFields$coefficients[["am"]]`.
+
+So, automatic cars in general consume more than manual ones. But, not only because the Type of Engine increase the consume. But, in general, automatic cars presents others features, on vs and drat, that also affects the consume. Considering the Transmission Type isolated, the real effect of changing the Transmission Type is `r modelResidualOfB$coefficients[["am"]]` MPG.
