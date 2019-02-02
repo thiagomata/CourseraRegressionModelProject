@@ -24,4 +24,4 @@ If we don’t have any other information about a car, beyond the Type of Transmi
 
 So, automatic cars in general consume more than manual ones. But, not necessarly because the Type of Engine increase the consume. But, in general, automatic cars presents others features, that also affects the consume. Considering the Transmission Type isolated, the real effect of changing the Transmission Type is 0.5417548 MPG (from -1.179838 to 2.263348 in the 95% confidence interval).
 
-Considering our 95% confidence interval, there is a reasonable chance that the effect of the different types of Transmission Types is zero. In that sense, ***it is inconclusive if some Transmission Type is better for MPG**. But, we still can say that, if the Transmission Type affects the MPG, the impact is pretty low (from -1.179838 to 2.263348)
+Considering our 95% confidence interval, there is a reasonable chance that the effect of the different types of Transmission Types is zero. In that sense, ***it is inconclusive if some Transmission Type is better for MPG***. But, we still can say that, if the Transmission Type affects the MPG, the impact is pretty low (from -1.179838 to 2.263348)
