@@ -14,9 +14,11 @@ After making a exploratory data analyses, this study will propose some models to
 After that, this paper will describe what strategy was used to the model selection. 
 Then, it will present the residual plot and diagnostics based on the model.
 
+The result of this project is available on this [github project](https://github.com/thiagomata/CourseraRegressionModelProject) that can be better visualized on the [github page](https://thiagomata.github.io/CourseraRegressionModelProject/).
+
 ## Analysis
 
-The R code and details of this project can be found on the [Project.Rmd](Project.Rmd). The code with the execution result of that can be found on the [Project.html](Project.html).
+The R code and details of this project can be found on the [Project.Rmd](Project.Rmd). The code with the execution result of that can be found on the [Project.html](https://thiagomata.github.io/CourseraRegressionModelProject/Project.html).
 
 ## Conclusion
 
