@@ -19,8 +19,9 @@ that want know more about the relationship between a set of variables and miles 
 
 ## Summary
 
-After making a exploratory data analyses, this study will propose some models to define the relationship among the fields and the MPG. After that, this paper will describe what
-strategy was used to the model selection. Then, it will present the residual plot and diagnostics based on the model.
+After making a exploratory data analyses, this study will propose some models to define the relationship among the fields and the MPG. 
+After that, this paper will describe what strategy was used to the model selection. 
+Then, it will present the residual plot and diagnostics based on the model.
 
 ```{r setup, include=TRUE}
 options(scipen=999)         # make the number printer more readable
@@ -127,7 +128,7 @@ Looking just to MPG and Type of Transmition, seems to have a strong relashionshi
 
 ## Checking Normality
 
-Many statistical tests, including correlation and regression model demands a normal distribution or an Gaussian distribution. So, first, let's check if the MPG is close to normal.
+Many statistical tests, including correlation and regression model demands a normal distribution or an Gaussian distribution. So, first, let's check if the MPG is close to normal using the Shapiro Test.
 ```{r normal_cuve}
 shapiroResultAutomaticCars <- shapiro.test(automaticCars$mpg)
 shapiroResultManualCars <- shapiro.test(manualCars$mpg)
@@ -150,7 +151,11 @@ title <- ggdraw() +
 print(plot_grid(title, plotSideBySide, ncol = 1, rel_heights = c(0.1, 1)))
 ```
 
-So, we can assume that is a Normal Distribution and create linear models.
+
+With p-value of 
+`r setNumberPrecision(shapiroResultAutomaticCars$p.value,4)` to Automatic Transmission Type and 
+`r setNumberPrecision(shapiroResultManualCars$p.value,4)` for Manual Transmission Type, 
+we can assume that is a Normal Distribution and create linear models.
 
 ## Creating a Model Using more Correlated Values
 
@@ -160,7 +165,8 @@ corTable <- as.data.frame(cor(mtCarsCorDummies))
 cat(knitr::kable(corTable[c("mpg","am"),]) %>%
     kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
 ```
-Creating 3 models to compare the results:
+
+### Creating Models to compare the results:
 
 ```{r describe_models, results='asis'}
 describeModels <- data.frame(
@@ -248,7 +254,7 @@ cat(knitr::kable(coefsAndResidual,digits = 4) %>%
 ```
 
 
-As show on the table above, some of the predictors of the Transmition Type, as vs and draft, are also predictors of the MPG. So, to have a clear vision about the influence of the Transmition Type on the MPG, let's see how good is the Transmition Type to predict the residual.
+As show on the table above, some of the predictors of the Transmition Type, as vs and wt, are also predictors of the MPG. So, to have a clear vision about the influence of the Transmition Type on the MPG, let's see how good is the Transmition Type to predict the residual.
 ```{r prediction_over_residual,results='asis'}
 ggplot(dfResiduals, aes(residual, 1:nrow(dfResiduals), colour = factor(am))) +
   xlab("Residual of the MPG from the model \n that used all fields except Transmition") +
@@ -375,7 +381,8 @@ As we can see on the plot above, using just the Transmission Type to try to pred
 
 ## Conclusion
 
-If we don't have any other information about a car, beyond the Type of Transmission, then we can say that a car with Manual Transmission should have the MPG around `r modelAAmOnly$coefficients[["am"]]` bigger than the Automatic. If we know everything about a car, and just changing the transmission type from 
-Automatic to Manual shoud increase the MPG in `r modelBStrongFields$coefficients[["am"]]`.
+If we don’t have any other information about a car, beyond the Type of Transmission, then we can say that a car with Manual Transmission should have the MPG around 7.2449393 (from `r confitModelA[1]` to `r confitModelA[2]` in the `r CONFIDENCE_INTERVAL * 100`% confidence interval) bigger than the Automatic. If we know everything about a car, and just changing the transmission type from Automatic to Manual shoud increase the MPG around `r modelBStrongFields$coefficients[["am"]]` (from `r confitStrongCoef[1]` to `r confitStrongCoef[2]` in the `r CONFIDENCE_INTERVAL * 100`% confidence interval).
 
-So, automatic cars in general consume more than manual ones. But, not only because the Type of Engine increase the consume. But, in general, automatic cars presents others features, on vs and drat, that also affects the consume. Considering the Transmission Type isolated, the real effect of changing the Transmission Type is `r modelResidualOfB$coefficients[["am"]]` MPG.
+So, automatic cars in general consume more than manual ones. But, not necessarly because the Type of Engine increase the consume. But, in general, automatic cars presents others features, that also affects the consume. Considering the Transmission Type isolated, the real effect of changing the Transmission Type is 0.5417548 MPG (from `r confitResidual[1]` to `r confitResidual[2]` in the `r CONFIDENCE_INTERVAL * 100`% confidence interval).
+
+Considering our `r CONFIDENCE_INTERVAL * 100`% confidence interval, there is a reasonable chance that the effect of the different types of Transmission Types is zero. In that sense, it **is inconclusive if some Transmission Type is better for MPG**. But, we still can say that, if the Transmission Type affects the MPG, the impact is pretty low (from `r confitResidual[1]` to `r confitResidual[2]`)
