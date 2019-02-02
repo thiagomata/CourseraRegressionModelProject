@@ -43,6 +43,8 @@ library('gridExtra')
 library('cowplot')
 library('kableExtra')
 library('ggpubr')
+library('plyr')
+
 registerDoParallel(cores=4)
 ```
 
@@ -133,8 +135,9 @@ Many statistical tests, including correlation and regression model demands a nor
 shapiroResultAutomaticCars <- shapiro.test(automaticCars$mpg)
 shapiroResultManualCars <- shapiro.test(manualCars$mpg)
 
-plotMpgDistributionCurve <- ggqqplot(automaticCars$mpg) + labs(y = "On Automatic Transmition Cars")
-plotAmDistributionCurve  <- ggqqplot(manualCars$mpg)  + labs(y = "On Manual Transmition Cars")
+plotMpgDistributionCurve <- ggqqplot(automaticCars$mpg, color=COLOR_TRANSMITION_AUTOMATIC) + labs(y = "On Automatic Transmition Cars")
+
+plotAmDistributionCurve  <- ggqqplot(manualCars$mpg, color=COLOR_TRANSMITION_MANUAL)  + labs(y = "On Manual Transmition Cars")
 plotSideBySide <- plot_grid(
   plotMpgDistributionCurve,
   plotAmDistributionCurve,
@@ -216,26 +219,20 @@ modelResidualOfB <- lm(residual ~ am,dfResiduals)
 
 ### Show Coeficients
 ```{r show_coefecients,results='asis'}
-library(plyr)
-
 # model using all the strong correlated fields
 coefStrong <- as.data.frame(t(modelBStrongFields$coefficients))
 coefStrong$RSS <- getResidualSquaredError(modelBStrongFields)
-#coefStrong$model <- "Model A"
 
 # model using all strong correlated fields except am
 coefStrongButAm <- as.data.frame(t(modelCStrongNoAm$coefficients))
 coefStrongButAm$RSS <- getResidualSquaredError(modelCStrongNoAm)
-#coefStrongButAm$model <- "Model B"
 
 # model using only am
 coefAm <- as.data.frame(t(modelAAmOnly$coefficients))
 coefAm$RSS <- getResidualSquaredError(modelAAmOnly)
-#coefAm$model <- "Model C"
 
 coefPredictAm <- as.data.frame(t(modelDPRedictAm$coefficients))
 coefPredictAm$RSS <- getResidualSquaredError(modelDPRedictAm)
-#coefPredictAm$model <- "Model D"
 
 coefsAndResidual <- rbind.fill(
   coefAm,
@@ -256,25 +253,14 @@ cat(knitr::kable(coefsAndResidual,digits = 4) %>%
 
 As show on the table above, some of the predictors of the Transmition Type, as vs and wt, are also predictors of the MPG. So, to have a clear vision about the influence of the Transmition Type on the MPG, let's see how good is the Transmition Type to predict the residual.
 ```{r prediction_over_residual,results='asis'}
-ggplot(dfResiduals, aes(residual, 1:nrow(dfResiduals), colour = factor(am))) +
-  xlab("Residual of the MPG from the model \n that used all fields except Transmition") +
-  ylab("Row Number") +
-  labs(col="Transmition Type") +
-  scale_color_manual(labels = c(TRANSMITION_AUTOMATIC, TRANSMITION_MANUAL),
-                     values = c(COLOR_TRANSMITION_AUTOMATIC, COLOR_TRANSMITION_MANUAL)) +
-  guides(fill=guide_legend(title="Type of Transmition")) +
-  geom_point()
-
 residCof <- as.data.frame(modelResidualOfB$coefficients)
 residCof$RSS <- getResidualSquaredError(modelResidualOfB)
 cat(knitr::kable(residCof) %>%
     kable_styling(bootstrap_options = "striped", full_width = F, position = "center"))
-
 ```
 
 So, we can see that the Transmition Type, the am column, have a strong impact on the predicition. When we remove it, the
 Residual sum of squares - RSS increases `r setNumberPrecision((100*(rssC - rssB)/rssC), 2)`%. But, the influence of the Transmition Type on the MPG is not as big in the model that just consider that field. So, many other fields also have a strong influence over the MPG and some of them are also strong correlated with the Transmition Type.
-
 
 ## Evaluating the Models
 
