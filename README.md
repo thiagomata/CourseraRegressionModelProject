@@ -8,6 +8,8 @@ that want know more about the relationship between a set of variables and miles 
 * Is an automatic or manual transmission better for MPG
 * Quantify the MPG difference between automatic and manual transmissions
 
+The result of the Anaylsis should be delivery as a PDF where the document without the appendices should have two pages or less. This document should present at the first paragraph an executive summary. Comparisons are expected between the different models and also an analysis of the coefficients, and residuals. The conclusions should include the confidence interval and the p-value.
+
 ## Summary
 
 After making a exploratory data analyses, this study will propose some models to define the relationship among the fields and the MPG. 
@@ -18,7 +20,7 @@ The result of this project is available on this [github project](https://github.
 
 ## Analysis
 
-The R code and details of this project can be found on the [Project.Rmd](Project.Rmd). The code with the execution result of that can be found on the [Project.html](https://thiagomata.github.io/CourseraRegressionModelProject/Project.html).
+The R code and details of this project can be found on the [Project.Rmd](Project.Rmd). The code with the execution result of that can be found on the [Project.html](https://thiagomata.github.io/CourseraRegressionModelProject/Project.html) and into the [Project.pdf](https://thiagomata.github.io/CourseraRegressionModelProject/Project.pdf).
 
 ## Conclusion
 
