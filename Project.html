@@ -194,7 +194,7 @@ $(document).ready(function () {
 
 <div id="executive-summary" class="section level2">
 <h2>Executive Summary</h2>
-<p>The influence of differents Tramission Types on the MPG is around 0.5417548, from -1.1798384 to 2.263348 in the confidence interval of 95% . Despide of getting a positive value, when we consider our 95% confidence interval, there is a reasonable chance that the effect of the different types of Transmission Types is zero. In that sense, it <strong>is inconclusive if some Transmission Type is better for MPG</strong>. But, we still can affirm that, if the Transmission Type affects the MPG, the impact is very small.</p>
+<p>The influence of the Tramission Types on the MPG is around0.5417548, from -1.1798384 to 2.263348 in the confidence interval of 95% . Despide of getting a positive value, when we consider our 95% confidence interval, there is a reasonable chance that the effect of the different types of Transmission Types is zero, positive or negative. In that sense, it <strong>is inconclusive if some Transmission Type is better for MPG</strong>. Using the T-Test over the model, model E, we can say, with p-value of 0.5253219, that knowning the Transmission Type changes the predictable result of the MPG, event after removing the influence of all others predictors.</p>
 </div>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
@@ -210,6 +210,9 @@ $(document).ready(function () {
 <p>With p-value of 0.8987 for Automatic Transmission Type and 0.5363 for Manual Transmission Type, we can assume that is a Normal Distribution and create linear models.</p>
 <div id="creating-regression-models" class="section level3">
 <h3>Creating Regression Models</h3>
+</div>
+<div id="comparing-coeficients-in-models" class="section level3">
+<h3>Comparing Coeficients in Models</h3>
 <table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -282,9 +285,6 @@ Just the Transmission Type
 </tr>
 </tbody>
 </table>
-</div>
-<div id="comparing-coeficients-in-models" class="section level3">
-<h3>Comparing Coeficients in Models</h3>
 <table class="table table-striped" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -437,22 +437,22 @@ NA
 </tbody>
 </table>
 <p>As shown on the table above, some of the predictors of the Transmission Type (am), as Type of Engine (vs) and Weight (wt), are also predictors of the MPG. So, to have a clear vision about the influence of the Transmission Type on the MPG, let’s see how good is the Transmission Type to predict the residual.</p>
-<p>So, we can see that the Transmission Type, the am column, have a strong impact on the prediction. When we remove it, the Residual sum of squares - RSS increases 4.89%. But, the influence of the Transmission Type on the MPG is not as big in the model that only consider that field. So, many other fields also have a strong influence over the MPG, and some of them are also strongly correlated with the Transmission Type.</p>
+<p>So, we can see that the Transmission Type, have a strong impact on the prediction. When we remove it, the Residual sum of squares - RSS increases 4.89%. But, the influence of it on the MPG is not as big in the model that only consider that field. So, many other fields also have a strong influence over the MPG, and some of them are also strongly correlated with the Transmission Type.</p>
 <p>The Transmission Type has a strong influence on the MPG. In this model, we can say that only knowing that some car has Manual Transmission should increases our MPG prediction to 7.2449393 with residual squared error of 720.8965992. This high value is because, not only the Transmission Type may increase the MPG, but also because the Transmission Type has a strong coefficient of 0.255172 with the Weight (wt), -0.2447799, with the Rear Axle Ratio (drat), 0.255172,and with the Type of Engine (vs), -0.4570708. These fields also presents high coeficients to predict the MPG with -3.2453124, 0.5469634 and 1.3976089 respectivaly.</p>
-<p>So, in that sense, the Type of Transmission is a good to predict if that the car presents many features that, all together, increase the car consume. Considering the 95% of confidence interval, that effects may vary in the interval of 3.6415096 to 10.848369.</p>
-<p>Considering that we known everthing about a car. Then how much changing only the Transmission Type may affects the MPG? To answer that question, we created a model that uses the most strong correlated fields. In this model, considering all the rest the same, changing a the Transmission type from Manual to Automatic should increase the MPG in 1.9520082 with residual squared error: 158.6543284. Considering the 95% of confidence interval, that effects may vary in the interval of -1.6735479 to 5.5775643.</p>
-<p>After extracting all the predictability data from the others fields, this new model can measure if the remain data is still correlated to the Type of Transmission. The coefficient from the Type of Transmission in this case is 0.5417548. In other words, after removing all the influence of the others fields, the influence of the Type of Transmission from Automatic to Manual on the MPG is 0.5417548 with residual squared error of 164.5515427. Considering the 95% of confidence interval, that effects may vary in the interval of -1.1798384 to 2.263348.</p>
-<p>As we can see on the residual plot, using just the Transmission Type to try to predict the MPG have a strong RSS and cleary is not a good model. Adding the Transmission Type, on the model reduce the Residual Sum of Squareds in 4.89%.</p>
+<p>So, the Type of Transmission is a good to predict if a car presents many features that, all together, increase the car consume. Considering the 95% of confidence interval, that effects may vary in the interval of 3.6415096 to 10.848369.</p>
+<p>Considering that we known everthing about a car. Then how much changing only the Transmission Type may affects the MPG? To answer this, we created a model that uses the most strong correlated fields. In this model, considering all the rest the same, changing a the Transmission type from Manual to Automatic should increase the MPG in 1.9520082 with residual squared error: 158.6543284. Considering the 95% of confidence interval, that effects may vary in the interval of -1.6735479 to 5.5775643.</p>
+<p>After extracting all the predictability data from the others fields, this new model can measure if the remain data is still correlated to the Type of Transmission. The coefficient from the Type of Transmission in this case is 0.5417548. After removing the influence of the others fields, the influence of the Type of Transmission on the MPG is 0.5417548 with residual squared error of 164.5515427. Considering the 95% of confidence interval, that effects may vary in the interval of -1.1798384 to 2.263348.</p>
+<p>As we can see on the residual plot, using just the Transmission Type to try to predict the MPG have a strong RSS and is not a good model. Adding the Transmission Type, on the model reduce the Residual Sum of Squareds in 4.89%.</p>
 </div>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>If we don’t have any other information about a car, beyond the Type of Transmission, then we can say that a car with Manual Transmission should have the MPG around 7.2449393 (from 3.6415096 to 10.848369 in the 95% confidence interval) bigger than the Automatic. If we know everything about a car, and just changing the transmission type from Automatic to Manual shoud increase the MPG around 1.9520082 (from -1.6735479 to 5.5775643 in the 95% confidence interval).</p>
+<p>If we don’t have any other information about a car, beyond the Type of Transmission, then knowing that a car has Manual Transmission should have the MPG around 7.2449393 (from 3.6415096 to 10.848369 in the 95% confidence interval) bigger than the Automatic. If we know everything about a car, and just changing the transmission type from Automatic to Manual shoud increase the MPG around 1.9520082 (from -1.6735479 to 5.5775643 in the 95% confidence interval).</p>
 <p>So, automatic cars in general consume more than manual ones. But, not necessarly because the Type of Engine increase the consume. But, in general, automatic cars presents others features, that also affects the consume. Considering the Transmission Type isolated, the real effect of changing the Transmission Type is 0.5417548 MPG (from -1.1798384 to 2.263348 in the 95% confidence interval).</p>
 <p>Considering our 95% confidence interval, there is a reasonable chance that the effect of the different types of Transmission Types is zero. In that sense, it <strong>is inconclusive if some Transmission Type is better for MPG</strong>. But, we still can say that, if the Transmission Type affects the MPG, the impact is pretty low (from -1.1798384 to 2.263348).</p>
 </div>
-<div id="apendices" class="section level2">
-<h2>Apendices</h2>
+<div id="appendices" class="section level2">
+<h2>Appendices</h2>
 <div id="dataset" class="section level3">
 <h3>Dataset</h3>
 <p>The dataset used in this study is the <a href="https://www.rdocumentation.org/packages/datasets/versions/3.5.2/topics/mtcars">Motor Trend Car Road Tests Data</a>. Each row contains the following fields:</p>
